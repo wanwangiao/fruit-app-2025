@@ -4,14 +4,41 @@
 import React, { useState, useEffect } from 'react';
 import { getCategories } from '@/data/mockDatabase'; // 從 mockDatabase 獲取分類
 
+// 定義商品選項值的類型
+interface OptionValue {
+  name: string;
+  priceModifier: number; // 價格調整
+}
+
+// 定義商品選項組的類型
+interface OptionGroup {
+  groupName: string;
+  type: 'single' | 'multiple';
+  required: boolean;
+  values: OptionValue[];
+}
+
+// 定義商品的類型
+interface Product {
+  id?: number; // id 在新建時可能不存在
+  name: string;
+  category: string;
+  price: number | string; // 價格可以是數字或空字串
+  isPriceByWeight: boolean;
+  imageUrl: string;
+  description: string;
+  stock: number | string; // 庫存可以是數字或空字串
+  options: OptionGroup[];
+}
+
 interface ProductFormProps {
-  initialData?: any; // 用於編輯模式，可選
-  onSave: (productData: any) => void;
+  initialData?: Product; // 用於編輯模式，可選
+  onSave: (productData: Product) => void;
   onCancel: () => void;
 }
 
 export default function ProductForm({ initialData, onSave, onCancel }: ProductFormProps) {
-  const [product, setProduct] = useState(initialData || {
+  const [product, setProduct] = useState<Product>(initialData || {
     name: '',
     category: '',
     price: '',
@@ -34,9 +61,9 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
-      setProduct(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      setProduct((prev: Product) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
     } else {
-      setProduct(prev => ({ ...prev, [name]: value }));
+      setProduct((prev: Product) => ({ ...prev, [name]: value }));
     }
   };
 
