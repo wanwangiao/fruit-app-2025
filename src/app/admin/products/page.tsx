@@ -140,7 +140,7 @@ export default function ProductsPage() {
         title={editingProduct ? '編輯商品' : '新增商品'}
       >
         <ProductForm 
-          initialData={editingProduct} 
+          initialData={editingProduct || undefined} 
           onSave={handleSaveProduct} 
           onCancel={() => setIsModalOpen(false)}
         />
