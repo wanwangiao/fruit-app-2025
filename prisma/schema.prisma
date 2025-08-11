@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // 給執行時用：走 pooler:6543
+  directUrl = env("DIRECT_URL")   // 給 migrate 用：走 db:5432
 }
 
 //==================================================
