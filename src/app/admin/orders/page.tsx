@@ -4,12 +4,34 @@ import React, { useState, useMemo } from 'react';
 import Modal from '@/components/Modal';
 import { getOrders, updateOrderStatus, updateOrder } from '@/data/mockDatabase'; // 引入 updateOrder
 
+// 定義訂單項目的類型
+interface OrderItem {
+  productId: number;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  options: any[]; // 根據你的需求，可以定義更具體的類型
+  isPriceByWeight: boolean;
+}
+
+// 定義訂單的類型
+interface Order {
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  totalAmount: number;
+  status: string;
+  orderDate: string;
+  items: OrderItem[];
+}
+
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(getOrders());
+  const [orders, setOrders] = useState<Order[]>(getOrders());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('所有狀態');
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null); // 模態框中編輯的訂單副本
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null); // 模態框中編輯的訂單副本
 
   const orderStatuses = ['所有狀態', '待處理', '已確認', '配送中', '已完成', '已取消'];
 
@@ -24,7 +46,7 @@ export default function OrdersPage() {
     });
   }, [orders, searchTerm, filterStatus]);
 
-  const handleViewDetails = (order: any) => {
+  const handleViewDetails = (order: Order) => {
     setSelectedOrder({ ...order }); // 傳遞訂單的副本到模態框，避免直接修改原始狀態
     setIsOrderDetailsModalOpen(true);
   };
@@ -37,17 +59,17 @@ export default function OrdersPage() {
 
   // 處理模態框中商品價格的變動
   const handleModalOrderItemPriceChange = (itemIndex: number, newUnitPrice: number) => {
-    setSelectedOrder(prevSelectedOrder => {
+    setSelectedOrder((prevSelectedOrder) => {
       if (!prevSelectedOrder || !prevSelectedOrder.items) {
         return prevSelectedOrder;
       }
-      const updatedItems = prevSelectedOrder.items.map((item: any, idx: number) => {
+      const updatedItems = prevSelectedOrder.items.map((item, idx) => {
         if (idx === itemIndex) {
           return { ...item, unitPrice: newUnitPrice };
         }
         return item;
       });
-      const newTotalAmount = updatedItems.reduce((sum: number, item: any) => sum + (item.unitPrice * item.quantity), 0);
+      const newTotalAmount = updatedItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
       return { ...prevSelectedOrder, items: updatedItems, totalAmount: newTotalAmount };
     });
   };
