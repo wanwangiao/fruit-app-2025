@@ -38,7 +38,9 @@ export default function OrdersPage() {
   // 處理模態框中商品價格的變動
   const handleModalOrderItemPriceChange = (itemIndex: number, newUnitPrice: number) => {
     setSelectedOrder(prevSelectedOrder => {
-      if (!prevSelectedOrder) return prevSelectedOrder;
+      if (!prevSelectedOrder || !prevSelectedOrder.items) {
+        return prevSelectedOrder;
+      }
       const updatedItems = prevSelectedOrder.items.map((item: any, idx: number) => {
         if (idx === itemIndex) {
           return { ...item, unitPrice: newUnitPrice };
