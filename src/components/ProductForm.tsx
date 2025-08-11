@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -46,15 +45,19 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
     imageUrl: '',
     description: '',
     stock: '',
-    options: [] // 商品選項結構: [{ groupName: '甜度', type: 'single' | 'multiple', required: true, values: ['微糖', '半糖'] }]
+    options: []
   });
 
   const categories = getCategories(); // 從 mockDatabase 獲取最新分類
 
-  // 初始化時，如果 initialData 有 options，則使用它
   useEffect(() => {
     if (initialData) {
-      setProduct(initialData);
+      // 確保 options 結構正確，避免 undefined 的問題
+      const sanitizedData = {
+        ...initialData,
+        options: initialData.options || [],
+      };
+      setProduct(sanitizedData);
     }
   }, [initialData]);
 
@@ -71,7 +74,7 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
   const handleAddOptionGroup = () => {
     setProduct(prev => ({
       ...prev,
-      options: [...prev.options, { groupName: '', type: 'single', required: true, values: [] }] // 預設為單選必填
+      options: [...prev.options, { groupName: '', type: 'single', required: true, values: [] }]
     }));
   };
 
@@ -100,13 +103,22 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
 
   const handleAddOptionValue = (groupIndex: number) => {
     const newOptions = [...product.options];
-    newOptions[groupIndex].values.push(''); // 新增一個空的選項值
+    // 修正：推入一個符合 OptionValue 型別的物件
+    newOptions[groupIndex].values.push({ name: '', priceModifier: 0 });
     setProduct(prev => ({ ...prev, options: newOptions }));
   };
 
-  const handleOptionValueChange = (groupIndex: number, valueIndex: number, newValue: string) => {
+  const handleOptionValueChange = (groupIndex: number, valueIndex: number, field: 'name' | 'priceModifier', value: string | number) => {
     const newOptions = [...product.options];
-    newOptions[groupIndex].values[valueIndex] = newValue;
+    const targetValue = newOptions[groupIndex].values[valueIndex];
+    
+    if (field === 'name') {
+      targetValue.name = value as string;
+    } else if (field === 'priceModifier') {
+      // 確保轉換為數字
+      targetValue.priceModifier = Number(value) || 0;
+    }
+    
     setProduct(prev => ({ ...prev, options: newOptions }));
   };
 
@@ -160,10 +172,10 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
           type="number"
           name="price"
           id="price"
-          value={product.isPriceByWeight ? '' : product.price} // 修正：時價時顯示空白
+          value={product.isPriceByWeight ? '' : product.price}
           onChange={handleChange}
           className="mt-1 block w-full border border-gray-300 p-2 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 text-gray-900"
-          disabled={product.isPriceByWeight} // 如果是時價，則禁用價格輸入
+          disabled={product.isPriceByWeight}
         />
       </div>
 
@@ -176,7 +188,7 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
           onChange={handleChange}
           className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
         />
-        <label htmlFor="isPriceByWeight" className="ml-2 block text-sm text-gray-900">此商品為時價/秤重商品 (價格將於訂單更新)</label>
+        <label htmlFor="isPriceByWeight" className="ml-2 block text-sm text-gray-900">此商品為時價/秤重商品</label>
       </div>
 
       <div>
@@ -218,7 +230,7 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
       {/* 商品選項管理區塊 */}
       <div className="border border-gray-200 p-4 rounded-lg bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-800 mb-3">商品選項</h3>
-        {product.options.map((group, groupIndex) => (
+        {product.options && product.options.map((group, groupIndex) => (
           <div key={groupIndex} className="mb-4 p-3 border border-gray-300 rounded-lg bg-white">
             <div className="flex justify-between items-center mb-2">
               <input
@@ -237,7 +249,6 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
               </button>
             </div>
             
-            {/* 新增：選項組類型 (單選/複選) */}
             <div className="flex items-center space-x-4 mb-2">
               <label className="text-sm font-medium text-gray-700">選擇類型:</label>
               <select
@@ -245,8 +256,8 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
                 onChange={(e) => handleOptionGroupTypeChange(groupIndex, e.target.value as 'single' | 'multiple')}
                 className="border border-gray-300 p-1 rounded-md text-gray-900 text-sm"
               >
-                <option value="single">單選 (只能選一個)</option>
-                <option value="multiple">複選 (可選多個)</option>
+                <option value="single">單選</option>
+                <option value="multiple">複選</option>
               </select>
               <input
                 type="checkbox"
@@ -263,9 +274,16 @@ export default function ProductForm({ initialData, onSave, onCancel }: ProductFo
                   <input
                     type="text"
                     placeholder="選項值 (例如: 微糖)"
-                    value={value}
-                    onChange={(e) => handleOptionValueChange(groupIndex, valueIndex, e.target.value)}
+                    value={value.name}
+                    onChange={(e) => handleOptionValueChange(groupIndex, valueIndex, 'name', e.target.value)}
                     className="flex-1 border border-gray-300 p-2 rounded-md text-gray-900"
+                  />
+                  <input
+                    type="number"
+                    placeholder="價格調整"
+                    value={value.priceModifier}
+                    onChange={(e) => handleOptionValueChange(groupIndex, valueIndex, 'priceModifier', e.target.value)}
+                    className="w-28 border border-gray-300 p-2 rounded-md text-gray-900"
                   />
                   <button
                     type="button"
