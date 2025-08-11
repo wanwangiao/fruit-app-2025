@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//==================================================
+// 1. 分類模型
+//==================================================
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // 分類名稱必須是唯一的
+  sortOrder Int       @default(0) // 用於排序
+  products  Product[] // 一個分類可以有多個商品
+}
+
+//==================================================
+// 2. 商品模型
+//==================================================
+model Product {
+  id              Int           @id @default(autoincrement())
+  name            String        // 商品名稱
+  description     String?       // 商品描述 (可選)
+  price           Float         // 價格
+  isPriceByWeight Boolean       @default(false) // 是否為時價/秤重
+  stock           Int           @default(0) // 庫存
+  imageUrl        String?       // 圖片 URL (可選)
+  
+  categoryId      Int           // 關聯到分類的外鍵
+  category        Category      @relation(fields: [categoryId], references: [id]) // 建立與 Category 的關聯
+
+  optionGroups    OptionGroup[] // 一個商品可以有多個選項組
+  orderItems      OrderItem[]   // 一個商品可以出現在多個訂單項目中
+}
+
+//==================================================
+// 3. 商品選項模型
+//==================================================
+// 選項組 (例如: 甜度, 尺寸)
+model OptionGroup {
+  id        Int      @id @default(autoincrement())
+  groupName String   // 選項組名稱
+  type      String   // 'single' 或 'multiple'
+  required  Boolean  @default(true)
+
+  productId Int      // 關聯到商品的外鍵
+  product   Product  @relation(fields: [productId], references: [id]) // 建立與 Product 的關聯
+
+  values    OptionValue[] // 一個選項組可以有多個選項值
+}
+
+// 選項值 (例如: 微糖, 半糖, 大杯)
+model OptionValue {
+  id            Int     @id @default(autoincrement())
+  name          String  // 選項值名稱
+  priceModifier Float   @default(0) // 價格調整
+
+  optionGroupId Int         // 關聯到選項組的外鍵
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id]) // 建立與 OptionGroup 的關聯
+}
+
+//==================================================
+// 4. 訂單模型
+//==================================================
+model Order {
+  id              Int       @id @default(autoincrement())
+  customerName    String
+  customerPhone   String
+  deliveryAddress String
+  totalAmount     Float
+  status          String    // 例如: '待處理', '已確認', '配送中', '已完成', '已取消'
+  orderDate       DateTime  @default(now())
+
+  items           OrderItem[] // 一個訂單可以有多個訂單項目
+}
+
+model OrderItem {
+  id        Int       @id @default(autoincrement())
+  quantity  Int
+  unitPrice Float     // 儲存當時的單價
+
+  orderId   Int       // 關聯到訂單的外鍵
+  order     Order     @relation(fields: [orderId], references: [id])
+
+  productId Int       // 關聯到商品的外鍵
+  product   Product   @relation(fields: [productId], references: [id])
+
+  options   OrderItemOption[] // 這個訂單項目選擇了哪些選項
+}
+
+// 記錄訂單項目所選的選項
+model OrderItemOption {
+  id            Int       @id @default(autoincrement())
+  groupName     String
+  valueName     String
+  priceModifier Float
+
+  orderItemId   Int       // 關聯到訂單項目的外鍵
+  orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+}
